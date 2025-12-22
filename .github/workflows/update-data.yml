@@ -1,4 +1,4 @@
-name: Update data from Sheet
+name: Update data from Google Sheet
 
 on:
   repository_dispatch:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: write   # allows committing/pushing changes with GITHUB_TOKEN
+  contents: write   # needed to commit & push with GITHUB_TOKEN
 
 concurrency:
   group: update-data
@@ -27,20 +27,41 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Install
+      - name: Install dependencies
         run: npm ci
 
-      - name: Pull spreadsheet -> JSON
+      # 🔐 Verify trigger secret (only for Sheet triggers)
+      - name: Verify trigger secret
+        if: ${{ github.event_name == 'repository_dispatch' }}
+        run: |
+          if [ "${{ github.event.client_payload.secret }}" != "${{ secrets.TRIGGER_SECRET }}" ]; then
+            echo "❌ Invalid trigger secret"
+            exit 1
+          fi
+
+      # 🔑 Write API key for spreadsheet-to-json
+      - name: Write Google API key
+        run: |
+          echo "${{ secrets.SPREADSHEET_API_KEY }}" > local-api-key.txt
+
+      # 🔄 Pull spreadsheet → JSON
+      - name: Run getData
         run: npm run getData
 
-      - name: Run consistency tests
+      # 🧪 Run consistency tests
+      - name: Run tests
         run: npm test
 
+      # 🧹 Clean up secret file no matter what
+      - name: Remove API key file
+        if: always()
+        run: rm -f local-api-key.txt
+
+      # 📝 Commit & push if JSON changed
       - name: Commit & push if changed
         run: |
           set -e
 
-          # If nothing changed, exit cleanly.
           if git diff --quiet; then
             echo "No changes detected after getData. Nothing to commit."
             exit 0
@@ -50,5 +71,5 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add -A
-          git commit -m "Update data (automated)"
+          git commit -m "Update framily data from Google Sheet (automated)"
           git push origin main
