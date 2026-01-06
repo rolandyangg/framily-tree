@@ -20,6 +20,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -57,21 +58,22 @@ jobs:
         if: always()
         run: rm -f local-api-key.txt
 
+      # 🧾 Create branch commit + PR
       - name: Create pull request
-      id: cpr
-      uses: peter-evans/create-pull-request@v6
-      with:
-        token: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
-        base: main
-        branch: automation/update-framily-data
-        delete-branch: true
-        commit-message: "Update framily data from Google Sheet (automated)"
-        title: "Update framily data from Google Sheet (automated)"
-        body: |
-          Automated update from Google Sheet → JSON.
-          Trigger: ${{ github.event_name }}
-          Run: ${{ github.run_id }}
-        labels: automated, data
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
+          base: main
+          branch: automation/update-framily-data
+          delete-branch: true
+          commit-message: "Update framily data from Google Sheet (automated)"
+          title: "Update framily data from Google Sheet (automated)"
+          body: |
+            Automated update from Google Sheet → JSON.
+            Trigger: ${{ github.event_name }}
+            Run: ${{ github.run_id }}
+          labels: automated, data
 
       # ✅ Merge PR onto main (admin/bypass)
       - name: Merge PR onto main
