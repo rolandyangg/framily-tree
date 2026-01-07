@@ -2491,26 +2491,6 @@ var brothers = [
     "name": "Billy Bob Joe",
     "big": "Roland Yang",
     "pledgeclass": "Fall 2027"
-  },
-  {
-    "name": "Billy John",
-    "big": "Roland Yang",
-    "pledgeclass": "Fall 2028"
-  },
-  {
-    "name": "John Chungus",
-    "big": "Roland Yang",
-    "pledgeclass": "Fall 2029"
-  },
-  {
-    "name": "John",
-    "big": "John Chungus",
-    "pledgeclass": "Fall 2028"
-  },
-  {
-    "name": "Apple",
-    "big": "John Chungus",
-    "pledgeclass": "Fall 2028"
   }
 ];
 /* istanbul ignore else */
