@@ -2501,6 +2501,11 @@ var brothers = [
     "name": "John Chungus",
     "big": "Roland Yang",
     "pledgeclass": "Fall 2029"
+  },
+  {
+    "name": "John",
+    "big": "John Chungus",
+    "pledgeclass": "Fall 2028"
   }
 ];
 /* istanbul ignore else */
