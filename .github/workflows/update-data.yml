@@ -4,8 +4,6 @@ on:
   repository_dispatch:
     types: [update_data]
   workflow_dispatch: {}
-  push:
-    branches: [main]
 
 permissions:
   contents: write
@@ -25,6 +23,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }} # IMPORTANT: so git pushes can use this token if needed
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -35,7 +34,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # 🔐 Verify trigger secret (only for Sheet triggers)
       - name: Verify trigger secret
         if: ${{ github.event_name == 'repository_dispatch' }}
         run: |
@@ -44,25 +42,20 @@ jobs:
             exit 1
           fi
 
-      # 🔑 Write API key for spreadsheet-to-json
       - name: Write Google API key
         run: |
           echo "${{ secrets.SPREADSHEET_API_KEY }}" > local-api-key.txt
 
-      # 🔄 Pull spreadsheet → JSON
       - name: Run getData
         run: npm run getData
 
-      # 🧪 Run consistency tests
       - name: Run tests
         run: npm test
 
-      # 🧹 Clean up secret file no matter what
       - name: Remove API key file
         if: always()
         run: rm -f local-api-key.txt
 
-      # 🧾 Create branch commit + PR
       - name: Create pull request
         id: cpr
         uses: peter-evans/create-pull-request@v6
@@ -79,8 +72,7 @@ jobs:
             Run: ${{ github.run_id }}
           labels: automated-data
 
-      # ✅ Merge PR onto main (admin/bypass)
-      - name: Merge PR onto main
+      - name: Merge PR onto main (admin/bypass)
         if: ${{ steps.cpr.outputs.pull-request-number != '' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -88,30 +80,23 @@ jobs:
           pr="${{ steps.cpr.outputs.pull-request-number }}"
           gh pr merge "$pr" --squash --delete-branch --admin
 
-  sync-gh-pages:
-    name: Sync gh-pages (only automated update merges)
-    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, 'Update framily data from Google Sheet (automated)') }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout gh-pages
-        uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Configure git
+      - name: Sync gh-pages from updated main (same run)
+        if: ${{ steps.cpr.outputs.pull-request-number != '' }}
         run: |
+          set -e
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Fetch main
-        run: git fetch origin main:refs/remotes/origin/main
+          # Ensure we have latest refs after the merge
+          git fetch origin main:refs/remotes/origin/main
+          git fetch origin gh-pages:refs/remotes/origin/gh-pages
 
-      - name: Merge main into gh-pages
-        run: git merge --no-ff origin/main -m "Merge main into gh-pages (automated-data)"
+          # Switch to gh-pages
+          git checkout -B gh-pages origin/gh-pages
 
-      - name: Push gh-pages
-        run: git push origin gh-pages
+          # Merge main into gh-pages
+          git merge --no-ff origin/main -m "Merge main into gh-pages (automated-data)"
+
+          # Push gh-pages (will use the checkout token)
+          git push origin gh-pages
