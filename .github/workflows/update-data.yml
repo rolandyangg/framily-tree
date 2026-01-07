@@ -80,7 +80,7 @@ jobs:
           pr="${{ steps.cpr.outputs.pull-request-number }}"
           gh pr merge "$pr" --squash --delete-branch --admin
 
-      - name: Sync gh-pages from updated main (same run)
+      - name: Sync gh-pages from updated main (mirror main, no merge commit)
         if: ${{ steps.cpr.outputs.pull-request-number != '' }}
         run: |
           set -e
@@ -88,15 +88,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Ensure we have latest refs after the merge
           git fetch origin main:refs/remotes/origin/main
           git fetch origin gh-pages:refs/remotes/origin/gh-pages
 
-          # Switch to gh-pages
           git checkout -B gh-pages origin/gh-pages
+          git reset --hard origin/main
 
-          # Merge main into gh-pages
-          git merge --no-ff origin/main -m "Merge main into gh-pages (automated-data)"
-
-          # Push gh-pages (will use the checkout token)
-          git push origin gh-pages
+          git push origin gh-pages --force-with-lease
