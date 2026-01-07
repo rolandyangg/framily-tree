@@ -56,7 +56,7 @@ jobs:
         if: always()
         run: rm -f local-api-key.txt
 
-      - name: Create pull request
+      - name: Create pull request on main
         id: cpr
         uses: peter-evans/create-pull-request@v6
         with:
@@ -64,15 +64,15 @@ jobs:
           base: main
           branch: automation/update-framily-data
           delete-branch: true
-          commit-message: "Update framily data from Google Sheet (automated)"
-          title: "Update framily data from Google Sheet (automated)"
+          commit-message: "data: Update framily data from Google Sheet (automated)"
+          title: "data: Update framily data from Google Sheet (automated)"
           body: |
             Automated update from Google Sheet → JSON.
             Trigger: ${{ github.event_name }}
             Run: ${{ github.run_id }}
           labels: automated-data
 
-      - name: Merge PR onto main (admin/bypass)
+      - name: Merge PR onto main
         if: ${{ steps.cpr.outputs.pull-request-number != '' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -80,7 +80,7 @@ jobs:
           pr="${{ steps.cpr.outputs.pull-request-number }}"
           gh pr merge "$pr" --squash --delete-branch --admin
 
-      - name: Sync gh-pages from updated main (mirror main, no merge commit)
+      - name: Sync gh-pages from updated main
         if: ${{ steps.cpr.outputs.pull-request-number != '' }}
         run: |
           set -e
