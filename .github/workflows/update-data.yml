@@ -4,9 +4,8 @@ on:
   repository_dispatch:
     types: [update_data]
   workflow_dispatch: {}
-  pull_request:
+  push:
     branches: [main]
-    types: [closed]
 
 permissions:
   contents: write
@@ -68,7 +67,6 @@ jobs:
         id: cpr
         uses: peter-evans/create-pull-request@v6
         with:
-          # NOTE: Don't use `${{ secrets.GITHUB_TOKEN }}` — the `||` fallback is unreliable here.
           token: ${{ secrets.GITHUB_TOKEN }}
           base: main
           branch: automation/update-framily-data
@@ -91,8 +89,8 @@ jobs:
           gh pr merge "$pr" --squash --delete-branch --admin
 
   sync-gh-pages:
-    name: Sync gh-pages (only automated-data PRs)
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'automated-data') }}
+    name: Sync gh-pages (only automated update merges)
+    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, 'Update framily data from Google Sheet (automated)') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
