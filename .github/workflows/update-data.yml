@@ -94,4 +94,4 @@ jobs:
           git checkout -B gh-pages origin/gh-pages
           git reset --hard origin/main
 
-          git push origin gh-pages --force-with-lease
+          git push origin gh-pages
